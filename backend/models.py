@@ -15,10 +15,11 @@ class Visual(BaseModel):
 # 3. 单页幻灯片结构
 class Slide(BaseModel):
     # 限制 layout 只能是这几种，方便渲染端处理
+    id: int
     layout: str = Field(description="布局类型: title, content, two_column") 
     title: str = Field(description="幻灯片标题")
     subtitle: Optional[str] = Field(None, description="副标题，仅 title 布局需要")
-    bullet_points: List[str] = Field(default=[], description="正文列表内容")
+    content: Optional[Content] = Field(None, description="正文内容")
     image_prompt: Optional[str] = Field(None, description="生成的配图提示词")
 
 # 4. 整个 PPT 的结构
