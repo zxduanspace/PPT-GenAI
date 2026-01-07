@@ -1,7 +1,7 @@
 from pptx import Presentation
 
 # 加载你的模板
-prs = Presentation("template.pptx")
+prs = Presentation("templates/academic.pptx")
 
 print("🔍 开始分析模板结构...\n")
 

@@ -15,6 +15,7 @@ app.mount("/download", StaticFiles(directory="generated_ppts"), name="download")
 
 class TopicRequest(BaseModel):
     topic: str
+    theme: str = "academic"  # default theme
 
 @app.post("/api/generate")
 async def generate_ppt(req: TopicRequest):
@@ -24,7 +25,7 @@ async def generate_ppt(req: TopicRequest):
     ppt_data = await generate_ppt_content(req.topic)
     
     # 2. invoke PPT rendering engine to create PPTX file
-    filename = create_pptx_file(ppt_data)
+    filename = create_pptx_file(ppt_data, req.theme)
     
     # 3. construct download URL
     download_url = f"http://localhost:8000/download/{filename}"

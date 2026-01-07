@@ -5,61 +5,76 @@ from models import PresentationData
 import os
 import uuid
 
-LAYOUT_MAPPING = {
-    "title_cover": 3,    # 封面页 Layout Index
-    "content_list": 1,   # 列表页 Layout Index
-    "two_column": 4,    # 双栏页 Layout Index
-    "chart": 6           # 图表页 Layout Index
-}
-
-PLACEHOLDER_MAPPING = {
-    "title": 0,          # 标题通常都是 idx 0
-    "subtitle": 13,       # 封面副标题 idx
-    "content": 1         # 正文列表 idx
-}
-
 LAYOUT_CONFIG = {
-    "title_cover":      {"layout_idx": 0, "title_idx": 0, "subtitle_idx": 13},
-    "content_list":    {"layout_idx": 1, "title_idx": 0, "body_idx": 1},
-    "two_column": {
-        "layout_idx": 2,       # 对比页母版索引
-        "title_idx": 0, 
-        "left_idx": 1,         # 左边框占位符索引
-        "right_idx": 2         # 右边框占位符索引
+    # === 1. 学术风格 ===
+    "academic": {
+        "file": "templates/academic.pptx",
+        "layouts": {
+            "title_cover": {"layout_idx": 0, "title_idx": 2, "subtitle_idx": 3},
+            "content_list": {"layout_idx": 1, "title_idx": 0, "body_idx": 1},
+            "two_column": {"layout_idx": 2, "title_idx": 0, "left_idx": 1, "right_idx": 2},
+            "chart": {"layout_idx": 3, "chart_idx": 1}
+        }
     },
-    "chart": {
-        "layout_idx": 3,       # 图表页母版索引
-        "chart_idx": 1         # 图表框占位符索引
+    
+    # === 2. 商业风格 ===
+    "business": {
+        "file": "templates/business.pptx",
+        "layouts": {
+            "title_cover": {"layout_idx": 0, "title_idx": 0, "subtitle_idx": 1},
+            "content_list": {"layout_idx": 1, "title_idx": 0, "body_idx": 1},
+            "two_column": {"layout_idx": 2, "title_idx": 0, "left_idx": 1, "right_idx": 2},
+            "chart": {"layout_idx": 3, "chart_idx": 1}
+        }
+    },
+    
+    # === 3. 教学风格 ===
+    "teaching": {
+        "file": "templates/teaching.pptx",
+        "layouts": {
+            "title_cover": {"layout_idx": 0, "title_idx": 0, "subtitle_idx": 13},
+            "content_list": {"layout_idx": 1, "title_idx": 0, "body_idx": 1},
+            "two_column": {"layout_idx": 2, "title_idx": 0, "left_idx": 1, "right_idx": 2},
+            "chart": {"layout_idx": 3, "chart_idx": 1}
+        }
     }
 }
 
-def create_pptx_file(data: PresentationData) -> str:
+def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
+    """
+    :param theme: 'academic', 'business', 'teaching'
+    """
     print(f"🎨 [Render] 正在渲染 PPT: {data.topic}...")
+
+    # 1. 加载对应主题的配置
+    # 如果找不到这个主题，就默认回退到 business
+    current_config = LAYOUT_CONFIG.get(theme, LAYOUT_CONFIG["academic"])
     
-    # 1. load template
-    if not os.path.exists("template.pptx"):
-        raise FileNotFoundError("找不到 template.pptx，请先准备模板文件！")
+    # 2. 找到文件路径
+    template_path = current_config["file"]
+    print(f"🎨 [Render] 正在使用主题: {theme}, 文件: {template_path}")
+    
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"找不到模板文件: {template_path}")
         
-    prs = Presentation("template.pptx")
+    prs = Presentation(template_path)
 
     # 2. 遍历数据，一页页生成
     for slide_data in data.slides:
 
-        # A. 获取当前页面的配置 (如果找不到就默认用 content)
+        # A. 获取当前页面的配置 (如果找不到就默认用 content_list)
         layout_key = slide_data.layout
-        config = LAYOUT_CONFIG.get(layout_key, LAYOUT_CONFIG["content_list"])
+        layout_map = current_config["layouts"].get(layout_key, current_config["layouts"]["content_list"])
         
         # B. 创建页面
-        slide_layout = prs.slide_layouts[config["layout_idx"]]
+        slide_layout = prs.slide_layouts[layout_map["layout_idx"]]
         slide = prs.slides.add_slide(slide_layout)
         
         # C. 填充标题 (绝大多数页面都有标题)
-        # slide.shapes.title 是 python-pptx 提供的快捷方式，等同于找 idx=0
         try:
-            # 大部分版式标题都在 idx 0，也可以用 config["title_idx"] 指定
-            title_placeholder = slide.shapes.title 
-            if title_placeholder:
-                title_placeholder.text = slide_data.title
+            if slide_data.title:
+                title_shape = slide.placeholders[layout_map["title_idx"]]
+                title_shape.text = slide_data.title
         except:
             pass
             
@@ -72,17 +87,17 @@ def create_pptx_file(data: PresentationData) -> str:
                 # 使用 try-except 防止模板里没有这个占位符导致报错
                 try:
                     # 获取副标题占位符
-                    subtitle_shape = slide.placeholders[config["subtitle_idx"]]
+                    subtitle_shape = slide.placeholders[layout_map["subtitle_idx"]]
                     subtitle_shape.text = slide_data.subtitle
                 except KeyError:
-                    print(f"⚠️ 警告: 布局 {layout_idx} 找不到副标题占位符")
+                    print(f"⚠️ 警告: 布局找不到副标题占位符")
 
         # --- 情况 2: 列表页 (Content List) ---
         elif slide_data.layout == "content_list":
-            # 尝试填充列表内容
+            # 填充列表内容
             if slide_data.content and slide_data.content.bullet_points:
                 try:
-                    content_shape = slide.placeholders[config["body_idx"]]
+                    content_shape = slide.placeholders[layout_map["body_idx"]]
                     
                     # 获取文本框对象 (TextFrame)
                     tf = content_shape.text_frame
@@ -95,14 +110,32 @@ def create_pptx_file(data: PresentationData) -> str:
                         p.level = 0 # 缩进级别 (0是一级要点)
                         
                 except KeyError:
-                    print(f"⚠️ 警告: 布局 {layout_idx} 找不到正文占位符")
+                    print(f"⚠️ 警告: 布局找不到正文占位符")
+            
+            # 填充大段文本
+            if slide_data.content and slide_data.content.text_body:
+                try:
+                    content_shape = slide.placeholders[layout_map["body_idx"]]
+                    
+                    # 获取文本框对象 (TextFrame)
+                    tf = content_shape.text_frame
+                    tf.clear() # 清除模板里默认的提示文字
+                    
+                    # 直接填入大段文本
+                    p = tf.add_paragraph()
+                    p.text = slide_data.content.text_body
+                    p.level = 0
+                    
+                except KeyError:
+                    print(f"⚠️ 警告: 布局找不到正文占位符")
+
                     
         # --- 情况 3: 左右对比页(two column) ...
         elif layout_key == "two_column":
             try:
                 # 填左边
                 if slide_data.content and slide_data.content.content_left:
-                    tf_left = slide.placeholders[config["left_idx"]].text_frame
+                    tf_left = slide.placeholders[layout_map["left_idx"]].text_frame
                     tf_left.clear()
                     for item in slide_data.content.content_left:
                         p = tf_left.add_paragraph()
@@ -111,7 +144,7 @@ def create_pptx_file(data: PresentationData) -> str:
                 
                 # 填右边
                 if slide_data.content and slide_data.content.content_right:
-                    tf_right = slide.placeholders[config["right_idx"]].text_frame
+                    tf_right = slide.placeholders[layout_map["right_idx"]].text_frame
                     tf_right.clear()
                     for item in slide_data.content.content_right:
                         p = tf_right.add_paragraph()
@@ -130,7 +163,7 @@ def create_pptx_file(data: PresentationData) -> str:
                 chart_data.add_series(slide_data.chart_data.title, slide_data.chart_data.values)
 
                 # 2. 找到占位符的位置 (关键步骤：借用占位符的坐标)
-                placeholder = slide.placeholders[config["chart_idx"]]
+                placeholder = slide.placeholders[layout_map["chart_idx"]]
                 
                 # 3. 在该位置插入真实图表 (COLUMN_CLUSTERED 是柱状图)
                 slide.shapes.add_chart(
@@ -140,8 +173,8 @@ def create_pptx_file(data: PresentationData) -> str:
                     chart_data
                 )
                 
-                # 4. (可选) 删掉原本的占位符框，或者留着当底衬
-                # placeholder.element.getparent().remove(placeholder.element)
+                # 4. 删掉原本的占位符框
+                placeholder.element.getparent().remove(placeholder.element)
                 
             except Exception as e:
                 print(f"⚠️ 图表生成失败: {e}")
