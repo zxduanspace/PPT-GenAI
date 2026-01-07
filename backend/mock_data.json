@@ -1,0 +1,59 @@
+{
+  "topic": "Mock测试：新能源汽车",
+  "slides": [
+    {
+        "id": 1,
+        "layout": "title_cover",
+        "title": "新能源汽车发展趋势",
+        "subtitle": "2024年度行业分析报告"
+    },
+    {
+      "id": 2,
+      "layout": "content_list",
+      "title": "当前市场痛点",
+      "content": {
+        "bullet_points": [
+          "人力成本逐年上升，效率瓶颈明显",
+          "数据孤岛现象严重，无法有效利用",
+          "现有自动化工具缺乏灵活性"
+        ]
+      },
+      "visual": { "need_image": false }
+    },
+    {
+      "id": 3,
+      "layout": "two_column",
+      "title": "我们的解决方案",
+      "content": {
+        "content_left": [
+            "【燃油车】",
+            "加油方便，无续航焦虑",
+            "维护成本高（机油/滤芯）",
+            "噪音大，震动明显"
+        ],
+        "content_right": [
+            "【电动车】",
+            "用车成本极低（电费便宜）",
+            "结构简单，保养便宜",
+            "静谧性好，加速快"
+        ]
+      },
+      "visual": {
+        "need_image": true,
+        "image_prompt": "Robot hand shaking human hand, 3d render, blue background",
+        "image_url": "[https://images.unsplash.com/photo-1620712943543-bcc4688e7485](https://images.unsplash.com/photo-1620712943543-bcc4688e7485)" 
+      }
+    },
+    {
+        "id": 4,
+        "layout": "chart",
+        "title": "3. 全球销量预测 (万辆)",
+        "chart_data": {
+            "title": "销量增长趋势",
+            "chart_type": "COLUMN_CLUSTERED",
+            "labels": ["2023", "2024", "2025", "2026"],
+            "values": [1500, 2200, 3500, 5000]
+        }
+    }
+  ]
+}
