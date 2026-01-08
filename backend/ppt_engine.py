@@ -1,3 +1,4 @@
+import math 
 import os
 import uuid
 import requests
@@ -10,7 +11,7 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.enum.text import PP_ALIGN
 from models import PresentationData
 
-# === 1. 辅助函数 (来自 backend2) ===
+# === 1. 辅助函数 ===
 
 def get_image_stream(query):
     # 1. 设置请求头（防止被网站拦截）
@@ -51,32 +52,62 @@ def get_image_stream(query):
     # 5. 实在不行返回 None，渲染引擎里会跳过插图逻辑，防止程序崩溃
     return None
 
-def auto_fit_text(text_frame, content_list: list, font_name="Arial"):
-    """
-    自动调整文本大小以适应文本框
-    """
+def auto_fit_text(text_frame, content_list: list, font_name="Microsoft YaHei"):
     if not content_list: return
-    text_frame.clear() 
-
-    # 简单估算字数
-    total_chars = sum([len(str(line)) for line in content_list])
+    text_frame.clear()
     
-    # 动态字号策略 (已按你的要求调大)
-    if total_chars > 300: 
-        font_size = Pt(16)
-    elif total_chars > 150: 
-        font_size = Pt(20)
-    else: 
-        font_size = Pt(24)
+    # 1. 获取文本框尺寸 (带更强的安全兜底)
+    try:
+        parent = text_frame._parent
+        box_width_pt = parent.width.pt - Pt(10) 
+        box_height_pt = parent.height.pt - Pt(10)
+        
+        # ⚠️ 关键修正：如果获取到的高度太小（比如小于 2英寸）
+        # 强制认为它有一个标准正文框的高度 (约 5 英寸)
+        if box_height_pt < Inches(2).pt:
+            box_height_pt = Inches(5).pt
+            
+    except:
+        # 完全获取不到时的默认值
+        box_width_pt = Inches(8).pt
+        box_height_pt = Inches(5).pt
 
+    # 2. 定义字号列表 
+    candidate_sizes = [32, 28, 24]
+    best_size = 24
+
+    # 3. 模拟排版
+    for size in candidate_sizes:
+        avg_char_width = size * 0.6 
+        line_height = size * 1.2
+        
+        chars_per_line = max(1, int(box_width_pt / avg_char_width))
+        
+        total_lines = 0
+        for line_text in content_list:
+            text_len = len(str(line_text))
+            if text_len == 0:
+                total_lines += 1
+                continue
+            lines_needed = math.ceil(text_len / chars_per_line)
+            total_lines += lines_needed
+            
+        estimated_height = total_lines * line_height
+        
+        # 如果能在高度限制内装下，就选用当前这个大字号
+        if estimated_height <= box_height_pt:
+            best_size = size
+            break
+    
+    # 4. 应用字号
     for line in content_list:
         p = text_frame.add_paragraph()
         p.text = str(line)
-        p.font.size = font_size
-        p.font.name = font_name  # 统一使用传入的字体
+        p.font.size = Pt(best_size) 
+        p.font.name = font_name
         p.space_after = Pt(10)
 
-def create_manual_table(slide, data, font_name="Arial"):
+def create_manual_table(slide, data, font_name="Microsoft YaHei"):
     """
     手动创建表格 (处理模板可能没有表格占位符的情况)
     """
@@ -93,7 +124,7 @@ def create_manual_table(slide, data, font_name="Arial"):
     left = Inches(1)
     top = Inches(2.5)
     width = Inches(8)
-    height = Inches(final_height) # 使用动态高度
+    height = Inches(final_height) 
 
     # 创建表格形状
     shape = slide.shapes.add_table(row_count+1, len(headers), left, top, width, height)
@@ -109,8 +140,8 @@ def create_manual_table(slide, data, font_name="Arial"):
         for p in cell.text_frame.paragraphs:
             p.font.bold = True
             p.font.color.rgb = RGBColor(255, 255, 255)
-            p.font.size = Pt(18)      # 你的设定
-            p.font.name = font_name   # 统一字体
+            p.font.size = Pt(18)      
+            p.font.name = font_name   
 
     # 2. 填充数据行
     for r_idx, row in enumerate(rows):
@@ -119,16 +150,15 @@ def create_manual_table(slide, data, font_name="Arial"):
                 cell = table.cell(r_idx+1, c_idx)
                 cell.text = str(val)
                 for p in cell.text_frame.paragraphs:
-                    p.font.size = Pt(16)    # 你的设定
-                    p.font.name = font_name # 统一字体
+                    p.font.size = Pt(16)    
+                    p.font.name = font_name 
+
 # === 2. 布局配置 (来自 backend) ===
-# 扩充了 table 和 image_page 的映射
 LAYOUT_CONFIG = {
     "academic": {
         "file": "templates/academic.pptx",
         "layouts": {
             "title_cover":  {"idx": 0, "title": 2, "sub": 3},
-            # content_list, chart, table, image_page, two_column共用一个布局索引，但区分内容占位符
             "content_list": {"idx": 1, "title": 0, "body": 1},
             "chart":        {"idx": 1, "title": 0, "body": 1},
             "table":        {"idx": 1, "title": 0, "body": 1}, 
@@ -173,6 +203,9 @@ def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
         prs = Presentation(template_path)
 
     layout_map = config["layouts"]
+    
+    # 定义全局字体，方便统一修改
+    global_font = "Microsoft YaHei"
 
     for slide_data in data.slides:
         l_type = slide_data.layout
@@ -200,30 +233,29 @@ def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
             elif l_type == "content_list":
                 if slide_data.content and slide_data.content.bullet_points:
                     body_ph = slide.placeholders[cfg["body"]]
-                    auto_fit_text(body_ph.text_frame, slide_data.content.bullet_points)
+                    auto_fit_text(body_ph.text_frame, slide_data.content.bullet_points, font_name=global_font)
                 elif slide_data.content and slide_data.content.text_body:
                     body_ph = slide.placeholders[cfg["body"]]
-                    auto_fit_text(body_ph.text_frame, [slide_data.content.text_body])
+                    auto_fit_text(body_ph.text_frame, [slide_data.content.text_body], font_name=global_font)
 
             # --- Case C: 左右栏布局 ---
             elif l_type == "two_column":
                 if slide_data.content:
                     if slide_data.content.content_left:
                         ph_left = slide.placeholders[cfg["left"]]
-                        auto_fit_text(ph_left.text_frame, slide_data.content.content_left)
+                        auto_fit_text(ph_left.text_frame, slide_data.content.content_left, font_name=global_font)
                     if slide_data.content.content_right:
                         ph_right = slide.placeholders[cfg["right"]]
-                        auto_fit_text(ph_right.text_frame, slide_data.content.content_right)
+                        auto_fit_text(ph_right.text_frame, slide_data.content.content_right, font_name=global_font)
 
             # --- Case D: 表格页 (新增) ---
             elif l_type == "table" and slide_data.table_data:
                 # 如果有正文占位符，先清空或删除，防止遮挡
                 if "body" in cfg and len(slide.placeholders) > cfg["body"]:
                     sp = slide.placeholders[cfg["body"]]
-                    # 也可以选择sp.text = ""，或者移除元素
                     sp.element.getparent().remove(sp.element)
                 
-                create_manual_table(slide, slide_data.table_data)
+                create_manual_table(slide, slide_data.table_data, font_name=global_font)
 
             # --- Case E: 图表页 ---
             elif l_type == "chart" and slide_data.chart_data:
@@ -243,9 +275,6 @@ def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
 
 
             # --- Case F: 图片处理 (通用) ---
-            # 任何页面只要 visual.need_image 为真，就尝试贴图
-            # 如果是专门的 image_page，图片可以大一点；否则放角落
-            
             if slide_data.visual and slide_data.visual.need_image:
                 prompt = slide_data.visual.image_prompt
                 if prompt:
