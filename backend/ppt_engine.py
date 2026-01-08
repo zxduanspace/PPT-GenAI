@@ -7,6 +7,7 @@ from pptx.util import Pt, Inches
 from pptx.dml.color import RGBColor
 from pptx.chart.data import CategoryChartData
 from pptx.enum.chart import XL_CHART_TYPE
+from pptx.enum.text import PP_ALIGN
 from models import PresentationData
 
 # === 1. 辅助函数 (来自 backend2) ===
@@ -116,13 +117,35 @@ LAYOUT_CONFIG = {
     "academic": {
         "file": "templates/academic.pptx",
         "layouts": {
+            "title_cover":  {"idx": 0, "title": 2, "sub": 3},
+            # content_list, chart, table, image_page, two_column共用一个布局索引，但区分内容占位符
+            "content_list": {"idx": 1, "title": 0, "body": 1},
+            "chart":        {"idx": 1, "title": 0, "body": 1},
+            "table":        {"idx": 1, "title": 0, "body": 1}, 
+            "image_page":   {"idx": 1, "title": 0, "body": 1},
+            "two_column":   {"idx": 2, "title": 0, "left": 1, "right": 2}
+        }
+    },
+    "business": {
+        "file": "templates/business.pptx",
+        "layouts": {
             "title_cover":  {"idx": 0, "title": 0, "sub": 1},
             "content_list": {"idx": 1, "title": 0, "body": 1},
-            "two_column":   {"idx": 2, "title": 0, "left": 1, "right": 2},
-            "chart":        {"idx": 3, "chart": 1},
-            # 下面这两个借用 content_list 布局，然后手动清空 body 占位符
+            "chart":        {"idx": 1, "title": 0, "body": 1},
             "table":        {"idx": 1, "title": 0, "body": 1}, 
-            "image_page":   {"idx": 1, "title": 0, "body": 1}
+            "image_page":   {"idx": 1, "title": 0, "body": 1},
+            "two_column":   {"idx": 2, "title": 0, "left": 1, "right": 2}
+        }
+    },
+    "teaching": {
+        "file": "templates/teaching.pptx",
+        "layouts": {
+            "title_cover":  {"idx": 0, "title": 0, "sub": 13},
+            "content_list": {"idx": 1, "title": 0, "body": 1},
+            "chart":        {"idx": 1, "title": 0, "body": 1},
+            "table":        {"idx": 1, "title": 0, "body": 1}, 
+            "image_page":   {"idx": 1, "title": 0, "body": 1},
+            "two_column":   {"idx": 2, "title": 0, "left": 1, "right": 2}
         }
     }
 }
@@ -131,7 +154,7 @@ LAYOUT_CONFIG = {
 def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
     print(f"🎨 [Render] 开始渲染 PPT: {data.topic} (主题: {theme})")
     
-    config = LAYOUT_CONFIG.get(theme, LAYOUT_CONFIG["academic"])
+    config = LAYOUT_CONFIG.get(theme, LAYOUT_CONFIG[theme])
     template_path = config["file"]
     
     if not os.path.exists(template_path):
@@ -152,15 +175,15 @@ def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
         
         # 2. 填充通用标题
         try:
-            if slide_data.title and slide.shapes.title:
-                slide.shapes.title.text = slide_data.title
+            if slide_data.title:
+                slide.placeholders[cfg["title"]].text = slide_data.title
         except: pass
             
         # 3. 根据类型分发处理逻辑
         try:
             # --- Case A: 封面页 ---
             if l_type == "title_cover" and slide_data.subtitle:
-                if len(slide.placeholders) > cfg.get("sub", 1):
+                if slide_data.subtitle:
                     slide.placeholders[cfg["sub"]].text = slide_data.subtitle
 
             # --- Case B: 列表内容页 (使用 Auto-fit) ---
@@ -199,12 +222,15 @@ def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
                 chart_data.add_series(slide_data.chart_data.title or "Series 1", slide_data.chart_data.values)
                 
                 # 尝试利用模板里的 Chart 占位符
-                if "chart" in cfg and len(slide.placeholders) > cfg["chart"]:
-                    ph = slide.placeholders[cfg["chart"]]
+                if "body" in cfg and len(slide.placeholders) > cfg["body"]:
+                    ph = slide.placeholders[cfg["body"]]
                     slide.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, ph.left, ph.top, ph.width, ph.height, chart_data)
                 else:
                     # 默认位置
                     slide.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(1), Inches(2), Inches(8), Inches(4.5), chart_data)
+                
+                ph.element.getparent().remove(ph.element)
+
 
             # --- Case F: 图片处理 (通用) ---
             # 任何页面只要 visual.need_image 为真，就尝试贴图
@@ -225,6 +251,8 @@ def create_pptx_file(data: PresentationData, theme: str = "academic") -> str:
                                 p.text = slide_data.visual.caption
                                 p.font.size = Pt(12)
                                 p.alignment = 2 # 居中
+                            ph = slide.placeholders[cfg["body"]]
+                            ph.element.getparent().remove(ph.element)
                         else:
                             # 装饰性小图 (右上角或右下角)
                             slide.shapes.add_picture(img_stream, Inches(6.5), Inches(5), width=Inches(3))

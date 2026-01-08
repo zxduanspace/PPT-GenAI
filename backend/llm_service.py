@@ -54,6 +54,12 @@ async def generate_ppt_content(topic: str, use_ai: bool = True) -> PresentationD
             },
             {
                 "id": 3,
+                "layout": "two_column",
+                "title": "要点2",
+                "content": { "content_left": ["要点2.1"], "content_right": ["要点2.2"] }
+            },
+            {
+                "id": 4,
                 "layout": "image_page", 
                 "title": "概念展示",
                 "visual": {
@@ -63,12 +69,23 @@ async def generate_ppt_content(topic: str, use_ai: bool = True) -> PresentationD
                 }
             },
             {
-                "id": 4,
+                "id": 5,
                 "layout": "table",
                 "title": "数据对比",
                 "table_data": {
                     "headers": ["指标", "传统模式", "AI模式"],
                     "rows": [["效率", "低", "高"], ["成本", "高", "低"]]
+                }
+            },
+            {
+                "id": 6,
+                "layout": "chart",
+                "title": "数据对比",
+                "chart_data": {
+                    "title": "销量增长趋势",
+                    "chart_type": "COLUMN_CLUSTERED",
+                    "labels": ["2023", "2024", "2025", "2026"],
+                    "values": [1500, 2200, 3500, 5000]
                 }
             }
         ]
