@@ -13,4 +13,4 @@ for i, layout in enumerate(prs.slide_layouts):
     for shape in layout.placeholders:
         print(f"   Placeholder idx [{shape.placeholder_format.idx}] - 类型: {shape.name}")
 
-print("\n✅ 分析结束。请把这些 Index 记下来！")
+print("\n✅ 分析结束, 请把这些 Index 记下来！")

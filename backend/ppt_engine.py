@@ -51,41 +51,52 @@ def get_image_stream(query):
     # 5. 实在不行返回 None，渲染引擎里会跳过插图逻辑，防止程序崩溃
     return None
 
-def auto_fit_text(text_frame, content_list: list, font_name="Microsoft YaHei"):
+def auto_fit_text(text_frame, content_list: list, font_name="Arial"):
     """
-    自动调整文本大小以适应文本框 (冗余裁剪/自适应)
+    自动调整文本大小以适应文本框
     """
     if not content_list: return
-    text_frame.clear() # 清空原有占位符文字
+    text_frame.clear() 
 
     # 简单估算字数
     total_chars = sum([len(str(line)) for line in content_list])
     
-    # 动态字号策略
-    if total_chars > 300: font_size = Pt(12)
-    elif total_chars > 150: font_size = Pt(16)
-    else: font_size = Pt(20)
+    # 动态字号策略 (已按你的要求调大)
+    if total_chars > 300: 
+        font_size = Pt(16)
+    elif total_chars > 150: 
+        font_size = Pt(20)
+    else: 
+        font_size = Pt(24)
 
     for line in content_list:
         p = text_frame.add_paragraph()
         p.text = str(line)
         p.font.size = font_size
-        p.font.name = font_name
+        p.font.name = font_name  # 统一使用传入的字体
         p.space_after = Pt(10)
 
-def create_manual_table(slide, data):
-    """手动创建表格 (处理模板可能没有表格占位符的情况)"""
-    # 默认位置和大小
-    left = Inches(1)
-    top = Inches(2.5)
-    width = Inches(8)
-    height = Inches(3.5)
-    
+def create_manual_table(slide, data, font_name="Arial"):
+    """
+    手动创建表格 (处理模板可能没有表格占位符的情况)
+    """
     headers = data.headers
     rows = data.rows
     
+    # === 动态计算表格高度 ===
+    # 基础行高估算: 表头 0.5英寸 + 每行 0.4英寸
+    row_count = len(rows)
+    estimated_height = 0.5 + (row_count * 0.4)
+    # 限制最大高度，防止画出幻灯片外面 (PPT一般高7.5英寸)
+    final_height = min(estimated_height, 5.0) 
+    
+    left = Inches(1)
+    top = Inches(2.5)
+    width = Inches(8)
+    height = Inches(final_height) # 使用动态高度
+
     # 创建表格形状
-    shape = slide.shapes.add_table(len(rows)+1, len(headers), left, top, width, height)
+    shape = slide.shapes.add_table(row_count+1, len(headers), left, top, width, height)
     table = shape.table
 
     # 1. 填充表头
@@ -94,23 +105,22 @@ def create_manual_table(slide, data):
         cell.text = str(h)
         cell.fill.solid()
         cell.fill.fore_color.rgb = RGBColor(0, 112, 192) # 经典蓝
-        # 设置表头字体
+        
         for p in cell.text_frame.paragraphs:
             p.font.bold = True
             p.font.color.rgb = RGBColor(255, 255, 255)
-            p.font.size = Pt(14)
-            p.font.name = "Microsoft YaHei"
+            p.font.size = Pt(18)      # 你的设定
+            p.font.name = font_name   # 统一字体
 
     # 2. 填充数据行
     for r_idx, row in enumerate(rows):
         for c_idx, val in enumerate(row):
-            if c_idx < len(headers): # 防止越界
+            if c_idx < len(headers):
                 cell = table.cell(r_idx+1, c_idx)
                 cell.text = str(val)
                 for p in cell.text_frame.paragraphs:
-                    p.font.size = Pt(12)
-                    p.font.name = "Microsoft YaHei"
-
+                    p.font.size = Pt(16)    # 你的设定
+                    p.font.name = font_name # 统一字体
 # === 2. 布局配置 (来自 backend) ===
 # 扩充了 table 和 image_page 的映射
 LAYOUT_CONFIG = {
