@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from models import PresentationData
 
 # 加载 .env 环境变量
-load_dotenv()
+load_dotenv(override=True)
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 async def generate_ppt_content(topic: str, use_ai: bool = True) -> PresentationData:
