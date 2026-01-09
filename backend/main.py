@@ -6,8 +6,18 @@ from ppt_engine import create_pptx_file
 import uvicorn
 import os
 from models import PresentationData
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="AI PPT Generator Pro")
+
+# ✨ 跨域配置 (解决 Failed to fetch 的核心)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 挂载静态文件目录，用于下载生成的 PPT
 os.makedirs("generated_ppts", exist_ok=True)
@@ -24,7 +34,7 @@ class OutlineRequest(BaseModel):
 async def generate_outline(req: OutlineRequest):
     print(f"🧠 [Step 1] 正在构思大纲: Topic={req.topic}")
     # 调用 LLM 服务
-    ppt_data = await generate_ppt_content(req.topic, use_ai=req.use_ai)
+    ppt_data = await generate_ppt_content(req.topic, use_ai=req.use_ai, slide_length=req.slide_length)
         
     # 直接返回 Pydantic 对象，FastAPI 会自动转成 JSON
     return {
