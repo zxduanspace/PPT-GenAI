@@ -7,7 +7,7 @@
 ![Status](https://img.shields.io/badge/Status-Prototype-blue?style=flat-square)
 ![Frontend](https://img.shields.io/badge/Frontend-Next.js_14_|_TypeScript-black?style=flat-square)
 ![Backend](https://img.shields.io/badge/Backend-FastAPI_|_Python_3.10+-blueviolet?style=flat-square)
-![AI](https://img.shields.io/badge/AI-OpenAI_GPT--4o-orange?style=flat-square)
+![AI](https://img.shields.io/badge/AI-OpenAI_GPT--3.5--turbo-orange?style=flat-square)
 
 ## 📖 Overview
 
@@ -62,7 +62,7 @@ graph LR
 The project adopts a **Monorepo** structure, ensuring a clean separation between the Intelligent Backend and the Interactive Frontend.
 
 ```bash
-SlideGen-AI/
+PPT-GenAI/
 ├── backend/               # 🐍 Python / FastAPI Server
 │   ├── generated_ppts/    # Output directory for generated artifacts
 │   ├── templates/         # Master PPTX template files (e.g., academic.pptx)
