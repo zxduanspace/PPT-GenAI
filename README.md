@@ -100,7 +100,7 @@ SlideGen-AI/
 | | **Tailwind CSS** | Utility-First Styling |
 | **Backend** | **Python 3.10+** | Core Logic |
 | | **FastAPI** | RESTful API Interface |
-| | **OpenAI API** | Intelligence Layer (GPT-4o) |
+| | **OpenAI API** | Intelligence Layer (GPT-3.5-turbo) |
 | | **python-pptx** | Native Document Rendering |
 | | **Pydantic** | Data Validation & Schema |
 

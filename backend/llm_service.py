@@ -178,25 +178,25 @@ def build_system_prompt(slide_count: int):
 
     # Structure Constraints
 
-    1. **Total Slide Count:** Generate EXACTLY {slide_count} slides.
-    The output JSON `slides` array must contain exactly {slide_count} objects.
+    1. **Total Slide Count:** Target {slide_count} slides. 
+    - A variation of ±1 slide is allowed if necessary for better content flow. 
+    - The output JSON slides array must contain between {slide_count} - 1 and {slide_count} + 1 objects.
 
-    2. **Mandatory Layout Inclusion:**
-    To ensure visual variety, the presentation MUST include:
-   - **At least ONE** data visualization chart slide (use either layout `'chart'` ).
+    2. **Mandatory Layout Inclusion:** To ensure visual variety, the presentation MUST include:
+    - **At least ONE** data visualization chart slide (use either layout `'chart'` ).
     - **At least ONE** data visualization table slide (use either layout OR `'table'`).
-   - **At least ONE** conceptual visualization slide (use layout `'image_page'`).
+    - **At least ONE** conceptual visualization slide (use layout `'image_page'`).
 
     3. **Content Distribution:**
-   - Slide 1 must be `'title_cover'`, and `'title_cover'` only use once.
-   - Use `'content_list'` (with text_body) for detailed explanations.
-   - Use `'two_column'` for comparisons.
-   - Do not repeat the same layout more than 3 times in a row (except for content_list).
+    - Slide 1 must be `'title_cover'`, and `'title_cover'` only use once.
+    - Use `'content_list'` (with text_body) for detailed explanations.
+    - Use `'two_column'` for comparisons.
+    - Do not repeat the same layout more than 3 times in a row (except for content_list).
 
     4. **Visual Pacing & Distribution (Critical):**
-   - **Do NOT clump visual slides together.** For example, do not put all charts and images at the very end.
-   - **Interleave layouts:** You must alternate between text-heavy layouts ('content_list', 'two_column') and visual layouts ('chart', 'table', 'image_page').
-   - **Rhythm:** Ideally, insert a visual slide after every 2-3 text slides to keep the audience engaged.
+    - **Do NOT clump visual slides together.** For example, do not put all charts and images at the very end.
+    - **Interleave layouts:** You must alternate between text-heavy layouts ('content_list', 'two_column') and visual layouts ('chart', 'table', 'image_page').
+    - **Rhythm:** Ideally, insert a visual slide after every 2-3 text slides to keep the audience engaged.
 
     # Final Output Format
     Output ONLY a valid JSON object. No conversational filler.
